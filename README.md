@@ -10,7 +10,7 @@ The mobile version of [Allicord](https://github.com/FlibatsUniverse/Allicord), t
 
 ## Installing
 
-Use [Allidroid Manager](https://github.com/FlibatsUniverse/AllidroidManager). It downloads the latest Discord, patches it with Allidroid, and installs the result for you, with no root needed. On iOS, install the tweak from the releases page. Allidroid Manager always fetches `app-release.apk` from the [latest release](https://github.com/FlibatsUniverse/Allidroid/releases/latest) of this repository.
+Download [Allidroid Manager](https://github.com/FlibatsUniverse/AllidroidManager/releases/latest/download/AllidroidManager.apk) on Android and tap Install. It downloads the latest Discord, patches it with Allidroid, and installs the result for you, with no root needed. On iOS, install the tweak from the releases page. Allidroid Manager always fetches `app-release.apk` from the [latest release](https://github.com/FlibatsUniverse/Allidroid/releases/latest) of this repository.
 
 ## Building
 
