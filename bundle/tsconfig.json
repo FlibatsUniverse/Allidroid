@@ -1,0 +1,40 @@
+{
+    "exclude": [
+        "tests",
+        "dist"
+    ],
+    "compilerOptions": {
+        "strict": true,
+        "paths": {
+            // Just to discourage from consuming the module directly
+            "spitroast": ["./shims/emptyModule"],
+
+            "@api": ["./src/api"],
+            "@api/*": ["./src/api/*"],
+            "@plugins": ["./src/plugins"],
+            "@plugins/*": ["./src/plugins/*"],
+            "@allidroid/*": ["./src/allidroid/*"],
+            "@compat/*": ["./src/compat/*"],
+            "@lib": ["./src/lib"],
+            "@lib/*": ["./src/lib/*"],
+            "@metro": ["./src/metro"],
+            "@metro/*": ["./src/metro/*"],
+            "@ui": ["./src/api/ui"],
+            "@ui/*": ["./src/api/ui/*"],
+            "@types": ["./src/lib/utils/types.ts"],
+            "@assets/*": ["./src/assets/*"]
+        },
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "resolveJsonModule": true,
+        "allowJs": true,
+        "checkJs": true,
+        "jsx": "react-jsx",
+        "target": "esnext",
+
+        "skipLibCheck": true,
+        "declaration": true,
+        "emitDeclarationOnly": true,
+        "stripInternal": true
+    }
+}

@@ -1,0 +1,44 @@
+name: Feature Request
+description: Have an idea for a new Allidroid feature? Request it here!
+labels: [enhancement]
+title: "[Feature] <title>"
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This form is for Allidroid only. Ideas for the installer go in the [Allidroid Manager repository](https://github.com/FlibatsUniverse/AllidroidManager/issues), and ideas for Allicord on desktop and web go in the [Allicord repository](https://github.com/FlibatsUniverse/Allicord/issues).
+
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: A clear and concise description of the feature you'd like to see
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation-notes
+    attributes:
+      label: Implementation Notes
+      description: If you have ideas about how this could be implemented technically, share them here
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Screenshots, mockups, examples, etc.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: agreement-check
+    attributes:
+      label: Request Agreement
+      options:
+        - label: I've searched existing issues and this hasn't been suggested before
+        - label: This feature would benefit most users, not just a specific use case
+        - label: I understand that if any of the above conditions are not met, this issue will be deleted and I will be banned from creating future issues without further warning
+          required: true
+        - label: I am willing to work on this myself

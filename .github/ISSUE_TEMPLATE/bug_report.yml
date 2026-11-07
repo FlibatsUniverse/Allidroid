@@ -1,0 +1,85 @@
+name: Bug/Crash Report
+description: Create a bug or crash report for Allidroid.
+labels: [bug]
+title: "[Bug] <title>"
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        GitHub Issues are for development, not support!
+
+        If you are having trouble installing Allidroid, or just have a question, head to our [Discord server](https://discord.com/invite/XszKXdqaZP) instead.
+
+        This form is only for bugs in Allidroid itself. Problems with the installer go in the [Allidroid Manager repository](https://github.com/FlibatsUniverse/AllidroidManager/issues), and problems with Allicord on desktop and web go in the [Allicord repository](https://github.com/FlibatsUniverse/Allicord/issues).
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: What happens when the bug or crash occurs?
+      description: Where does this bug or crash occur, when does it occur, etc.
+      placeholder: Discord crashes when I open ... in the Allidroid settings. I think it happens because of ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: What is the expected behavior?
+      description: Simply detail what the expected behavior is.
+      placeholder: I expect Allidroid to open the ... page instead of ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-take
+    attributes:
+      label: How do you recreate this bug or crash?
+      description: Give us a list of steps in order to recreate the bug or crash.
+      placeholder: |
+        1. Open ...
+        2. Tap ...
+        3. Observe "the bug" or "the crash"
+    validations:
+      required: true
+
+  - type: input
+    id: allidroid-version
+    attributes:
+      label: Allidroid version
+      description: Shown in the Allidroid settings and in Allidroid Manager.
+      placeholder: v1.0.0+build.12
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device and Android version
+      placeholder: Pixel 8, Android 15
+    validations:
+      required: true
+
+  - type: textarea
+    id: crash-log
+    attributes:
+      label: Logs
+      description: Paste any crash log or error output between the "```".
+      value: |
+        ```
+        Replace this text with your log.
+        ```
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: agreement-check
+    attributes:
+      label: Request Agreement
+      options:
+        - label: I've searched existing issues and this hasn't been reported before
+        - label: I am using the latest release of Allidroid, installed with Allidroid Manager
+        - label: This is not a support request
+        - label: I understand that if any of the above conditions are not met, this issue will be deleted and I will be banned from creating future issues without further warning
+          required: true
+        - label: I am willing to submit a fix for this myself

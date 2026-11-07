@@ -1,0 +1,166 @@
+import { Strings } from "@allidroid/i18n";
+import { CheckState, useFileExists } from "@allidroid/ui/hooks/useFS";
+import AssetBrowser from "@allidroid/pages/Developer/AssetBrowser";
+import { useProxy } from "@compat/storage";
+import { findAssetId } from "@api/assets";
+import { connectToReactDevTools } from "@api/debug";
+import { disconnectRdt, useIsRdtConnected } from "@api/debug/react";
+import { getReactDevToolsVersion, isLoaderConfigSupported, isReactDevToolsPreloaded, isAllidroidLoader } from "@api/native/loader";
+import { loaderConfig, settings } from "@api/settings";
+import { showToast } from "@ui/toasts";
+import { lazyDestructure } from "@lib/utils/lazy";
+import { NavigationNative } from "@metro/common";
+import { Button, LegacyFormText, Stack, TableRow, TableRowGroup, TableSwitchRow, TextInput } from "@metro/common/components";
+import { findByProps } from "@metro/wrappers";
+import { semanticColors } from "@ui/color";
+import { ErrorBoundary } from "@ui/components";
+import { createStyles, TextStyleSheet } from "@ui/styles";
+import { NativeModules } from "react-native";
+import { ScrollView } from "react-native";
+
+const { hideActionSheet } = lazyDestructure(() => findByProps("openLazy", "hideActionSheet"));
+const { showSimpleActionSheet } = lazyDestructure(() => findByProps("showSimpleActionSheet"));
+const { openAlert } = lazyDestructure(() => findByProps("openAlert", "dismissAlert"));
+const { AlertModal, AlertActionButton } = lazyDestructure(() => findByProps("AlertModal", "AlertActions"));
+
+const useStyles = createStyles({
+    leadingText: {
+        ...TextStyleSheet["heading-md/semibold"],
+        color: semanticColors.TEXT_MUTED,
+        marginRight: -4
+    },
+});
+
+export default function Developer() {
+    const [rdtFileExists, fs] = useFileExists("preloads/reactDevtools.js");
+    const rdtConnected = useIsRdtConnected();
+
+    const styles = useStyles();
+    const navigation = NavigationNative.useNavigation();
+
+    useProxy(settings);
+    useProxy(loaderConfig);
+
+    return (
+        <ErrorBoundary>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 38 }}>
+                <Stack style={{ paddingVertical: 24, paddingHorizontal: 12 }} spacing={24}>
+                    <TextInput
+                        label={Strings.DEBUGGER_URL}
+                        placeholder="localhost:7864"
+                        size="md"
+                        leadingIcon={() => <LegacyFormText style={styles.leadingText}>ws://</LegacyFormText>}
+                        defaultValue={settings.debuggerUrl}
+                        onChange={(v: string) => settings.debuggerUrl = v}
+                    />
+                    <TableRowGroup title={Strings.DEBUG}>
+                        <TableSwitchRow
+                            label={Strings.DEBUGGER_AUTOCONNECT}
+                            subLabel={Strings.DEBUGGER_AUTOCONNECT_DESC}
+                            icon={<TableRow.Icon source={findAssetId("BookmarkIcon")} />}
+                            value={!!settings.enableAutoDebugger}
+                            onValueChange={(v: boolean) => {
+                                settings.enableAutoDebugger = v;
+                            }}
+                        />
+                        {isReactDevToolsPreloaded() && <>
+                            <TableRow
+                                label={rdtConnected ? Strings.DISCONNECT_FROM_REACT_DEVTOOLS : Strings.CONNECT_TO_REACT_DEVTOOLS}
+                                subLabel={`Version ${getReactDevToolsVersion()}`}
+                                icon={<TableRow.Icon source={findAssetId(rdtConnected ? "DenyIcon" : "StaffBadgeIcon")} />}
+                                onPress={() => rdtConnected ? disconnectRdt() : connectToReactDevTools(settings.debuggerUrl)}
+                            />
+                        </>}
+                    </TableRowGroup>
+                    {isLoaderConfigSupported() && <>
+                        <TableRowGroup title="Loader config">
+                            <TableSwitchRow
+                                label={Strings.LOAD_FROM_CUSTOM_URL}
+                                subLabel={Strings.LOAD_FROM_CUSTOM_URL_DEC}
+                                icon={<TableRow.Icon source={findAssetId("LinkIcon")} />}
+                                value={loaderConfig.customLoadUrl.enabled}
+                                onValueChange={(v: boolean) => {
+                                    loaderConfig.customLoadUrl.enabled = v;
+                                }}
+                            />
+                            {loaderConfig.customLoadUrl.enabled && <TableRow label={<TextInput
+                                defaultValue={loaderConfig.customLoadUrl.url}
+                                size="md"
+                                onChange={(v: string) => loaderConfig.customLoadUrl.url = v}
+                                placeholder="http://localhost:4040/allidroid.js"
+                                label={Strings.ALLIDROID_URL}
+                            />} />}
+                            {isReactDevToolsPreloaded() && isAllidroidLoader() && <TableSwitchRow
+                                label={Strings.LOAD_REACT_DEVTOOLS}
+                                subLabel={`${Strings.VERSION}: ${getReactDevToolsVersion()}`}
+                                icon={<TableRow.Icon source={findAssetId("StaffBadgeIcon")} />}
+                                value={loaderConfig.loadReactDevTools}
+                                onValueChange={(v: boolean) => {
+                                    loaderConfig.loadReactDevTools = v;
+                                }}
+                            />}
+                        </TableRowGroup>
+                    </>}
+                    <TableRowGroup title="Other">
+                        <TableRow
+                            label={Strings.CLEAR_BUNDLE}
+                            subLabel={Strings.CLEAR_BUNDLE_DESC}
+                            icon={<TableRow.Icon source={findAssetId("TrashIcon")} variant="danger" />}
+                            onPress={() => {
+                                openAlert("allidroid-clear-bundle-reload-confirmation", <AlertModal
+                                    title={Strings.MODAL_RELOAD_REQUIRED}
+                                    content={Strings.MODAL_RELOAD_REQUIRED_DESC}
+                                    actions={
+                                        <Stack>
+                                            <AlertActionButton text={Strings.RELOAD} variant="destructive" onPress={() => NativeModules.BundleUpdaterManager.reload()} />
+                                            <AlertActionButton text={Strings.CANCEL} variant="secondary" />
+                                        </Stack>
+                                    }
+                                />);
+                            }}
+                            variant="danger"
+                        />
+                        <TableRow
+                            arrow
+                            label={Strings.ASSET_BROWSER}
+                            icon={<TableRow.Icon source={findAssetId("ImageIcon")} />}
+                            trailing={TableRow.Arrow}
+                            onPress={() => navigation.push("ALLIDROID_CUSTOM_PAGE", {
+                                title: Strings.ASSET_BROWSER,
+                                render: AssetBrowser,
+                            })}
+                        />
+                        <TableRow
+                            arrow
+                            label={Strings.ERROR_BOUNDARY_TOOLS_LABEL}
+                            icon={<TableRow.Icon source={findAssetId("WarningIcon")} />}
+                            onPress={() => showSimpleActionSheet({
+                                key: "ErrorBoundaryTools",
+                                header: {
+                                    title: "Which ErrorBoundary do you want to trip?",
+                                    icon: <TableRow.Icon style={{ marginRight: 8 }} source={findAssetId("WarningIcon")} />,
+                                    onClose: () => hideActionSheet(),
+                                },
+                                options: [
+                                    // @ts-expect-error
+                                    // Of course, to trigger an error, we need to do something incorrectly. The below will do!
+                                    { label: Strings.ALLIDROID, onPress: () => navigation.push("ALLIDROID_CUSTOM_PAGE", { render: () => <undefined /> }) },
+                                    { label: "Discord", isDestructive: true, onPress: () => navigation.push("ALLIDROID_CUSTOM_PAGE", { noErrorBoundary: true }) },
+                                ],
+                            })}
+                        />
+                        <TableSwitchRow
+                            label={Strings.ENABLE_EVAL_COMMAND}
+                            subLabel={Strings.ENABLE_EVAL_COMMAND_DESC}
+                            icon={<TableRow.Icon source={findAssetId("PencilIcon")} />}
+                            value={!!settings.enableEvalCommand}
+                            onValueChange={(v: boolean) => {
+                                settings.enableEvalCommand = v;
+                            }}
+                        />
+                    </TableRowGroup>
+                </Stack>
+            </ScrollView>
+        </ErrorBoundary>
+    );
+}

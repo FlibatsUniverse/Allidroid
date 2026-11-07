@@ -1,0 +1,9 @@
+Package: com.flibatsuniverse.allidroid.tweak
+Name: AllidroidTweak
+Version: 1.0.0
+Architecture: iphoneos-arm
+Description: Allidroid, the undisputed cutest Discord client mod, for iOS
+Maintainer: Alliance Development
+Author: Alliance Development
+Section: Tweaks
+Depends: mobilesubstrate (>= 0.9.5000)

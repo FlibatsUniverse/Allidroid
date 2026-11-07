@@ -1,0 +1,114 @@
+name: Allidroid Release
+on:
+  workflow_run:
+    workflows: [Allidroid Build]
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: allidroid-release
+  cancel-in-progress: false
+jobs:
+  package:
+    name: Package APK
+    if: github.repository == 'FlibatsUniverse/Allidroid' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+      tag: ${{ steps.source.outputs.tag }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - id: source
+        env:
+          BUILD_NUMBER: ${{ github.event.workflow_run.run_number }}
+        run: |
+          version=$(sed -n 's/.*versionName = "\([0-9][0-9.]*\)".*/\1/p' app/build.gradle.kts | head -1)
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'versionName must look like 1.2.3'; exit 1; }
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version+build.$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "name=$version+build.$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "code=$(git rev-list --count HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          java-version: 17
+          distribution: temurin
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+      - name: Set version
+        env:
+          VERSION_NAME: ${{ steps.source.outputs.name }}
+          VERSION_CODE: ${{ steps.source.outputs.code }}
+        run: |
+          sed -i "s/versionCode = [0-9]*/versionCode = $VERSION_CODE/; s/versionName = \"[^\"]*\"/versionName = \"$VERSION_NAME\"/" app/build.gradle.kts
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: '1.3.14'
+      - name: Build bundle
+        working-directory: bundle
+        run: |
+          bun install --frozen-lockfile
+          node scripts/build.mjs --build-minify
+          node scripts/buildPlugins.mjs
+      - name: Build APK
+        env:
+          KEYSTORE: ${{ secrets.keystore }}
+          KEYSTORE_PASSWORD: ${{ secrets.keystore_password }}
+          KEY_ALIAS: ${{ secrets.key_alias }}
+          KEY_PASSWORD: ${{ secrets.key_password }}
+        run: |
+          chmod +x ./gradlew
+          mkdir release
+          if [ -n "$KEYSTORE" ]; then
+            echo "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/signing-key.jks"
+            ./gradlew assembleRelease \
+              -Pandroid.injected.signing.store.file="$RUNNER_TEMP/signing-key.jks" \
+              -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+              -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+              -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+            cp app/build/outputs/apk/release/app-release.apk release/app-release.apk
+          else
+            ./gradlew assembleDebug
+            cp app/build/outputs/apk/debug/app-debug.apk release/app-release.apk
+          fi
+          cp bundle/dist/allidroid.min.js bundle/dist/plugins.json release/
+          cp LICENSE release/
+          cd release
+          sha256sum app-release.apk allidroid.min.js plugins.json LICENSE > SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release
+          path: release/
+          if-no-files-found: error
+  publish:
+    name: Publish release
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ needs.package.outputs.tag }}
+      SOURCE_SHA: ${{ needs.package.outputs.sha }}
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: release
+          path: release
+      - name: Verify checksums
+        working-directory: release
+        run: sha256sum -c SHA256SUMS
+      - name: Publish
+        run: |
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then echo 'Release already published'; exit 0; fi
+          gh release create "$RELEASE_TAG" release/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$SOURCE_SHA" \
+            --title "Allidroid $RELEASE_TAG" \
+            --generate-notes \
+            --latest

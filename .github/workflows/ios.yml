@@ -1,0 +1,35 @@
+name: Allidroid iOS Build
+on:
+  push:
+    branches: [main]
+    paths: ["ios/**", ".github/workflows/ios.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["ios/**", ".github/workflows/ios.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: allidroid-ios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  tweak:
+    name: Build tweak
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Install Theos
+        run: |
+          brew install ldid make
+          git clone --recursive --depth 1 https://github.com/theos/theos.git "$RUNNER_TEMP/theos"
+          echo "THEOS=$RUNNER_TEMP/theos" >> "$GITHUB_ENV"
+      - name: Build package
+        working-directory: ios
+        run: gmake package
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: AllidroidTweak-${{ github.sha }}
+          path: ios/packages/*.deb
+          if-no-files-found: error
