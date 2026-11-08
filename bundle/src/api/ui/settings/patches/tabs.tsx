@@ -52,7 +52,7 @@ export function patchTabsUI(unpatches: (() => void | boolean)[]) {
                 ...row.rawTabsConfig
             }
         })))
-        .reduce((a, c) => Object.assign(a, c));
+        .reduce((a, c) => Object.assign(a, c), {});
 
     const origRendererConfig = settingConstants.SETTING_RENDERER_CONFIG;
     let rendererConfigValue = settingConstants.SETTING_RENDERER_CONFIG;

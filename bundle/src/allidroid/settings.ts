@@ -68,17 +68,4 @@ export default function initSettings() {
             }
         ]
     });
-
-    // Retain compatibility with plugins which inject into this section
-    registerSection({
-        name: "Allidroid",
-        items: []
-    });
-
-    // Compat for plugins which injects into the settings
-    // Flaw: in the old UI, this will be displayed anyway with no items
-    registerSection({
-        name: "Allidroid",
-        items: []
-    });
 }
