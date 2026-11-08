@@ -16,6 +16,9 @@ export interface UnifiedPluginModel {
     /** Tags and search terms, joined so one search key covers them. */
     searchText?: string;
     required?: boolean;
+    /** Added by link rather than shipped with the app. */
+    isUser?: boolean;
+    isConflicted?(): boolean;
     hidden?: boolean;
     requiresRestart?: boolean;
     icon?: string;

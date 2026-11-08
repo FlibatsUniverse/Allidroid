@@ -38,16 +38,27 @@ val fonts by tweak {
     AllidroidPayloadBuilder.contribute { put("fontPatch", 2) }
 
     // ReactFontManager hijack runs regardless of fonts.json presence  it falls back to the default Typeface chain if no custom font file is found.
-    val clazz = classLoader.loadClassOrNull($$"com.facebook.react.common.assets.ReactFontManager$Companion")
-        ?: classLoader.loadClassOrNull($$"com.facebook.react.views.text.ReactFontManager$Companion")
-    
-    clazz!!.method("createAssetTypeface", String::class.java, Int::class.java, AssetManager::class.java).hook {
-        before {
-            val fontFamilyName: String = args[0].toString()
-            val style: Int = args[1] as Int
-            val assetManager: AssetManager = args[2] as AssetManager
-            result = FontsState.createAssetTypeface(fontFamilyName, style, assetManager)
-        }
+    // Depending on the React Native version the font manager is a Kotlin companion or a plain class
+    val clazz = listOf(
+        $$"com.facebook.react.common.assets.ReactFontManager$Companion",
+        $$"com.facebook.react.views.text.ReactFontManager$Companion",
+        "com.facebook.react.common.assets.ReactFontManager",
+        "com.facebook.react.views.text.ReactFontManager",
+    ).firstNotNullOfOrNull { classLoader.loadClassOrNull(it) }
+
+    if (clazz == null) {
+        log.w("ReactFontManager not found, custom fonts are unavailable")
+    } else {
+        runCatching {
+            clazz.method("createAssetTypeface", String::class.java, Int::class.java, AssetManager::class.java).hook {
+                before {
+                    val fontFamilyName: String = args[0].toString()
+                    val style: Int = args[1] as Int
+                    val assetManager: AssetManager = args[2] as AssetManager
+                    result = FontsState.createAssetTypeface(fontFamilyName, style, assetManager)
+                }
+            }
+        }.onFailure { log.w("Could not hook createAssetTypeface: ${it.message}") }
     }
 
     withAppContext { ctx ->
@@ -140,7 +151,7 @@ private object FontsState {
                 if (split.size != 2) break
                 val (customName, refName) = split
                 val downloads = fontsDownloadsDir ?: break
-                val file = File(downloads, "$customName/$refName.$fileExt").apply { ensureFile() }
+                val file = File(downloads, "$customName/$refName$fileExt").apply { ensureFile() }
                 if (!file.exists()) continue
                 return Typeface.createFromFile(file.absolutePath)
             }
@@ -175,7 +186,7 @@ private object FontsState {
                     if (split.size != 2) break
                     val (customName, refName) = split
                     val downloads = fontsDownloadsDir ?: break
-                    val file = File(downloads, "$customName/$refName.$fileExt").apply { ensureFile() }
+                    val file = File(downloads, "$customName/$refName$fileExt").apply { ensureFile() }
                     if (!file.exists()) continue
                     val font = Font.Builder(file).build()
                     fontFamilies.add(FontFamily.Builder(font).build())

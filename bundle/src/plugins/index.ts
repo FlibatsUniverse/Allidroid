@@ -85,6 +85,18 @@ export function findPluginId(ref: string) {
     return null;
 }
 
+/** Whether another plugin that is on already does this plugin's job. */
+export function isPluginConflicted(id: string) {
+    const manifest = registeredPlugins.get(id);
+    if (!manifest || isPluginEnabled(id)) return false;
+
+    for (const [otherId, other] of registeredPlugins) {
+        if (otherId === id || !isPluginEnabled(otherId)) continue;
+        if (refersTo(manifest.conflicts, otherId) || refersTo(other.conflicts, id)) return true;
+    }
+    return false;
+}
+
 const nameOf = (id: string) => registeredPlugins.get(id)?.display.name ?? id;
 const refersTo = (refs: string[] | undefined, id: string) => Boolean(refs?.some(ref => findPluginId(ref) === id));
 
@@ -422,13 +434,24 @@ export async function updatePlugins() {
             preenabled
         } = corePlugins[id];
 
-        // Core plugins are always installed
+        // Core plugins are always installed. Only the ones the app cannot do without start on.
+        const { required, enabledByDefault } = instance.manifest;
         pluginSettings[id] ??= {
-            enabled: preenabled ?? true
+            enabled: Boolean(required || enabledByDefault || preenabled)
         };
 
         registeredPlugins.set(id, instance.manifest);
         corePluginInstances.set(id, instance);
+    }
+
+    // Installs made while every built-in plugin started on get one reset to the new defaults
+    await awaitStorage(autoEnabled);
+    if (!autoEnabled["$core-defaults-1"]) {
+        autoEnabled["$core-defaults-1"] = true;
+        for (const id in corePlugins) {
+            const { required, enabledByDefault } = corePlugins[id].default.manifest;
+            if (!required && !enabledByDefault && pluginSettings[id]) pluginSettings[id]!.enabled = false;
+        }
     }
 
     await updateAllRepository();

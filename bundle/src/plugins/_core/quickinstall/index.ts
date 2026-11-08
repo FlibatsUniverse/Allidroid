@@ -12,7 +12,6 @@ export default definePlugin({
     version: "1.0.0",
     author: [AllidroidDevs.Kuraa],
     tags: ["Utility"],
-    enabledByDefault: true,
     start() {
         patches = [patchUrl()];
     },

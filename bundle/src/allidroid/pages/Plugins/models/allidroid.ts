@@ -1,5 +1,5 @@
 import { AllidroidIcon } from "@allidroid/settings";
-import { disablePlugin, enablePlugin, getPluginSettingsComponent, isPluginEnabled, pluginSettings } from "@plugins";
+import { disablePlugin, enablePlugin, getPluginSettingsComponent, isPluginConflicted, isPluginEnabled, pluginSettings } from "@plugins";
 import { AllidroidPluginManifest } from "@plugins/types";
 import { useObservable } from "@api/storage";
 
@@ -16,6 +16,7 @@ export default function unifyAllidroidPlugin(manifest: AllidroidPluginManifest):
         tags: manifest.tags,
         searchText: [...(manifest.tags ?? []), ...(manifest.searchTerms ?? [])].join(" "),
         required: manifest.required,
+        isConflicted: () => isPluginConflicted(manifest.id),
         hidden: manifest.hidden,
         requiresRestart: manifest.requiresRestart,
 

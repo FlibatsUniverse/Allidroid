@@ -11,6 +11,7 @@ export default function unifyCompatPlugin(compatPlugin: AllidroidPlugin): Unifie
         name: compatPlugin.manifest.name,
         description: compatPlugin.manifest.description,
         authors: compatPlugin.manifest.authors,
+        isUser: true,
         icon: (compatPlugin.manifest as any)[LEGACY_MANIFEST_KEY]?.icon,
 
         getBadges() {

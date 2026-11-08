@@ -25,6 +25,9 @@ interface ServiceInfo {
     default?: boolean;
 }
 
+// The app cannot draw SVG, so badges that come as SVG are asked for as PNG
+const rasterUrl = (url: string) => url.replace(/\.svg(\?|$)/, ".png$1");
+
 const DEFAULT_API_URL = "https://api.flibat.com/v1/alliance/badges";
 const REFRESH_EVERY = 1000 * 60 * 10;
 
@@ -198,7 +201,7 @@ export default definePlugin({
                 .forEach((b, i) => {
                     const id = `allibadges-${user.userId}-${i}`;
                     holder[id] = {
-                        source: { uri: b.badge },
+                        source: { uri: rasterUrl(b.badge) },
                         id: `allibadges-${i}`,
                         label: tooltipOf(b),
                         onPress: b.kind ? () => openBadge(b.kind, user.userId) : undefined
